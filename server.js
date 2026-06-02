@@ -1,4 +1,4 @@
-// Real WhatsApp Chatbot Backend Server
+// Real WhatsApp Chatbot Backend Server (Browserless - Baileys)
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -6,7 +6,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const qrcode = require('qrcode');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const pino = require('pino');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
@@ -108,147 +109,161 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 3. Initialize WhatsApp Client
+// 3. Initialize WhatsApp Client (Baileys)
+let sock = null;
 let isWhatsAppReady = false;
 let lastQr = null;
 
-const puppeteerOptions = {
-    headless: true,
-    args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu'
-    ]
-};
+async function connectToWhatsApp() {
+    console.log('Starting WhatsApp connection using Baileys...');
+    
+    const { state, saveCreds } = await useMultiFileAuthState('.wwebjs_auth');
+    
+    sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true,
+        logger: pino({ level: 'silent' }),
+        defaultQueryTimeoutMs: undefined
+    });
 
-// OS Detection for Chromium/Chrome path
-const isMac = os.platform() === 'darwin';
-if (isMac) {
-    puppeteerOptions.executablePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-} else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    // Railway Nixpacks sets PUPPETEER_EXECUTABLE_PATH automatically
-    puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-}
+    sock.ev.on('creds.update', saveCreds);
 
-const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: puppeteerOptions
-});
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        if (qr) {
+            lastQr = qr;
+            isWhatsAppReady = false;
+            console.log('Real WhatsApp QR Code received, broadcasting...');
+            qrcode.toDataURL(qr, (err, url) => {
+                if (!err) {
+                    io.emit('qr', url);
+                }
+            });
+        }
 
-client.on('qr', (qr) => {
-    lastQr = qr;
-    isWhatsAppReady = false;
-    console.log('Real WhatsApp QR Code received, broadcasting...');
-    qrcode.toDataURL(qr, (err, url) => {
-        if (!err) {
-            io.emit('qr', url);
+        if (connection === 'close') {
+            isWhatsAppReady = false;
+            lastQr = null;
+            const statusCode = (lastDisconnect?.error)?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            console.log(`WhatsApp connection closed (status code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
+            
+            io.emit('disconnected', lastDisconnect?.error?.message || 'Connection closed');
+            
+            if (shouldReconnect) {
+                // Wait 5 seconds before reconnecting
+                setTimeout(connectToWhatsApp, 5000);
+            } else {
+                console.log('Logged out. Clearing session files...');
+                sock = null;
+                try {
+                    fs.rmSync('.wwebjs_auth', { recursive: true, force: true });
+                } catch (e) {
+                    console.error('Error clearing session folder:', e);
+                }
+            }
+        } else if (connection === 'open') {
+            isWhatsAppReady = true;
+            lastQr = null;
+            console.log('WhatsApp connection established successfully!');
+            io.emit('ready');
         }
     });
-});
 
-client.on('ready', () => {
-    isWhatsAppReady = true;
-    lastQr = null;
-    console.log('WhatsApp connection established successfully!');
-    io.emit('ready');
-});
+    sock.ev.on('messages.upsert', async (m) => {
+        if (m.type !== 'notify') return;
+        
+        for (const msg of m.messages) {
+            // Check if message is outgoing or from group
+            if (msg.key.fromMe) continue;
+            
+            const from = msg.key.remoteJid;
+            if (!from || from.endsWith('@g.us')) continue; // Ignore groups and empty JIDs
 
-client.on('auth_failure', (msg) => {
-    console.error('WhatsApp Authentication Failure:', msg);
-    io.emit('auth_failure', msg);
-});
+            // Extract message text
+            let text = '';
+            if (msg.message) {
+                text = msg.message.conversation || 
+                       msg.message.extendedTextMessage?.text || 
+                       msg.message.imageMessage?.caption || 
+                       msg.message.videoMessage?.caption || 
+                       '';
+            }
+            
+            if (!text) continue;
 
-client.on('disconnected', (reason) => {
-    isWhatsAppReady = false;
-    lastQr = null;
-    console.log('WhatsApp connection lost:', reason);
-    io.emit('disconnected', reason);
-});
+            const fromPhone = from.split('@')[0];
+            const time = getFormattedTime();
 
-// 4. Handle incoming message
-client.on('message', async (msg) => {
-    if (msg.from.endsWith('@g.us')) return; // ignore groups
+            console.log(`Incoming real WhatsApp message from +${fromPhone}: "${text}"`);
 
-    const fromPhone = msg.from.split('@')[0];
-    const text = msg.body;
-    const time = getFormattedTime();
+            // Fetch push name or fallback to phone
+            const contactName = msg.pushName || fromPhone;
 
-    console.log(`Incoming real WhatsApp message from +${fromPhone}: "${text}"`);
+            let chat = conversations.find(c => c.phone.replace(/[\s\+]/g, '') === fromPhone);
+            if (!chat) {
+                chat = {
+                    id: `chat-${Date.now()}`,
+                    name: contactName,
+                    phone: `+${fromPhone}`,
+                    location: 'غير محدد',
+                    date: 'اليوم، ' + time,
+                    tag: 'lead',
+                    notes: '',
+                    aiActive: true,
+                    messages: []
+                };
+                conversations.push(chat);
+            }
 
-    // Fetch contact details
-    let contactName = fromPhone;
-    try {
-        const contact = await msg.getContact();
-        contactName = contact.pushname || contact.name || fromPhone;
-    } catch (e) {
-        console.error('Error fetching contact details:', e);
-    }
-
-    let chat = conversations.find(c => c.phone.replace(/[\s\+]/g, '') === fromPhone);
-    if (!chat) {
-        chat = {
-            id: `chat-${Date.now()}`,
-            name: contactName,
-            phone: `+${fromPhone}`,
-            location: 'غير محدد',
-            date: 'اليوم، ' + time,
-            tag: 'lead',
-            notes: '',
-            aiActive: true,
-            messages: []
-        };
-        conversations.push(chat);
-    }
-
-    const msgId = `msg-${Date.now()}`;
-    const newMsg = {
-        id: msgId,
-        sender: 'customer',
-        text: text,
-        time: time,
-        read: false
-    };
-    chat.messages.push(newMsg);
-    saveChats();
-
-    // Broadcast messages to CRM Dashboard
-    io.emit('whatsapp-message', { chatId: chat.id, message: newMsg, conversations });
-
-    // AI Auto-reply triggers
-    if (chat.aiActive && aiConfig.apiKey) {
-        io.emit('typing', { chatId: chat.id, show: true });
-
-        try {
-            const replyText = await generateGeminiResponse(chat);
-            const botMsgId = `msg-bot-${Date.now()}`;
-
-            // Send actual message on WhatsApp
-            await client.sendMessage(msg.from, replyText);
-
-            const botMsg = {
-                id: botMsgId,
-                sender: 'bot',
-                text: replyText,
-                time: getFormattedTime()
+            const msgId = `msg-${Date.now()}`;
+            const newMsg = {
+                id: msgId,
+                sender: 'customer',
+                text: text,
+                time: time,
+                read: false
             };
-            chat.messages.push(botMsg);
+            chat.messages.push(newMsg);
             saveChats();
 
-            io.emit('typing', { chatId: chat.id, show: false });
-            io.emit('whatsapp-message', { chatId: chat.id, message: botMsg, conversations });
-        } catch (err) {
-            console.error('Gemini error during auto-reply:', err);
-            io.emit('typing', { chatId: chat.id, show: false });
-            io.emit('error-log', { message: `خطأ في الذكاء الاصطناعي: ${err.message}` });
-        }
-    }
-});
+            // Broadcast messages to CRM Dashboard
+            io.emit('whatsapp-message', { chatId: chat.id, message: newMsg, conversations });
 
-// 5. Gemini AI generator
+            // AI Auto-reply triggers
+            if (chat.aiActive && aiConfig.apiKey) {
+                io.emit('typing', { chatId: chat.id, show: true });
+
+                try {
+                    const replyText = await generateGeminiResponse(chat);
+                    const botMsgId = `msg-bot-${Date.now()}`;
+
+                    // Send actual message on WhatsApp using Baileys syntax
+                    await sock.sendMessage(from, { text: replyText });
+
+                    const botMsg = {
+                        id: botMsgId,
+                        sender: 'bot',
+                        text: replyText,
+                        time: getFormattedTime()
+                    };
+                    chat.messages.push(botMsg);
+                    saveChats();
+
+                    io.emit('typing', { chatId: chat.id, show: false });
+                    io.emit('whatsapp-message', { chatId: chat.id, message: botMsg, conversations });
+                } catch (err) {
+                    console.error('Gemini error during auto-reply:', err);
+                    io.emit('typing', { chatId: chat.id, show: false });
+                    io.emit('error-log', { message: `خطأ في الذكاء الاصطناعي: ${err.message}` });
+                }
+            }
+        }
+    });
+}
+
+// 4. Gemini AI generator
 async function generateGeminiResponse(chatSession) {
     const genAI = new GoogleGenerativeAI(aiConfig.apiKey);
     let modelName = aiConfig.model;
@@ -336,7 +351,7 @@ function buildSystemInstruction() {
 4. أجب باختصار وبشكل ودود ومباشر يناسب محادثات واتساب (تجنب الإجابات الطويلة جداً التي لا داعي لها).`;
 }
 
-// 6. Socket.io Handlers
+// 5. Socket.io Handlers
 io.on('connection', (socket) => {
     console.log('CRM Client connected:', socket.id);
 
@@ -386,10 +401,10 @@ io.on('connection', (socket) => {
 
             io.emit('whatsapp-message', { chatId: chat.id, message: newMsg, conversations });
 
-            if (isWhatsAppReady) {
+            if (isWhatsAppReady && sock) {
                 try {
-                    const formattedPhone = chat.phone.replace(/[\s\+]/g, '') + '@c.us';
-                    await client.sendMessage(formattedPhone, text);
+                    const formattedPhone = chat.phone.replace(/[\s\+]/g, '') + '@s.whatsapp.net';
+                    await sock.sendMessage(formattedPhone, { text: text });
                     console.log(`Manual WhatsApp message sent to ${chat.phone}: "${text}"`);
                 } catch (e) {
                     console.error('Error sending manual message via WhatsApp:', e);
@@ -405,15 +420,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect-device', async () => {
         console.log('Disconnecting WhatsApp session as requested...');
         try {
-            await client.logout();
-        } catch (e) {
-            console.error('Logout error, forcing destroy:', e);
-            try {
-                await client.destroy();
-                client.initialize();
-            } catch (err) {
-                console.error('Forced destroy error:', err);
+            if (sock) {
+                await sock.logout();
+                sock = null;
             }
+        } catch (e) {
+            console.error('Logout error:', e);
         }
         isWhatsAppReady = false;
         lastQr = null;
@@ -430,10 +442,12 @@ io.on('connection', (socket) => {
             });
         } else {
             console.log('Initializing WhatsApp client on QR request...');
-            client.initialize().catch(err => {
-                console.error('Error initializing WhatsApp client:', err);
-                socket.emit('error-log', { message: `خطأ في بدء تشغيل عميل واتساب: ${err.message}` });
-            });
+            if (!sock) {
+                connectToWhatsApp().catch(err => {
+                    console.error('Error initializing WhatsApp client:', err);
+                    socket.emit('error-log', { message: `خطأ في بدء تشغيل عميل واتساب: ${err.message}` });
+                });
+            }
         }
     });
 });
@@ -453,7 +467,7 @@ server.listen(PORT, () => {
 });
 
 // Initialize on startup
-console.log('Initializing WhatsApp web client...');
-client.initialize().catch(err => {
+console.log('Initializing WhatsApp client...');
+connectToWhatsApp().catch(err => {
     console.error('Failed to initialize WhatsApp client on startup:', err);
 });
