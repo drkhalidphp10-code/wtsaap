@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsBot AI - مساعد واتساب الذكي</title>
+    <!-- Google Fonts: Cairo & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Chart.js for beautiful charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">
+                    <i class="ri-whatsapp-fill"></i>
+                    <i class="ri-flashlight-fill ai-spark"></i>
+                </div>
+                <h2>WhatsBot <span>AI</span></h2>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="ri-dashboard-3-line"></i>
+                    <span>لوحة التحكم</span>
+                </button>
+                <button class="nav-item" data-tab="whatsapp-connect">
+                    <i class="ri-qr-code-line"></i>
+                    <span>ربط الواتساب</span>
+                    <span class="status-dot disconnected" id="nav-status-dot"></span>
+                </button>
+                <button class="nav-item" data-tab="ai-settings">
+                    <i class="ri-brain-line"></i>
+                    <span>إعدادات الذكاء الاصطناعي</span>
+                </button>
+                <button class="nav-item" data-tab="live-chat">
+                    <i class="ri-chat-3-line"></i>
+                    <span>المحادثات المباشرة</span>
+                    <span class="badge" id="unread-chats-count">0</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Profile" id="user-avatar-img">
+                    </div>
+                    <div class="user-info">
+                        <h4>صالون لورا للتجميل</h4>
+                        <p>باقة الأعمال الفضية</p>
+                    </div>
+                </div>
+                <button class="logout-btn" title="تسجيل الخروج">
+                    <i class="ri-logout-box-r-line"></i>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Top Header -->
+            <header class="app-header">
+                <div class="header-welcome">
+                    <h1 id="header-title">أهلاً بك، صالون لورا</h1>
+                    <p id="header-subtitle">إليك ملخص أداء مساعد الذكاء الاصطناعي اليوم.</p>
+                </div>
+                <div class="header-actions">
+                    <div class="connection-status-badge disconnected" id="global-status-badge">
+                        <span class="pulse-ring"></span>
+                        <i class="ri-whatsapp-line"></i>
+                        <span id="global-status-text">الواتساب غير متصل</span>
+                    </div>
+                    <div class="theme-toggle">
+                        <i class="ri-sun-line"></i>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Tab Sections Container -->
+            <div class="tab-content-container">
+                
+                <!-- 1. DASHBOARD TAB -->
+                <section class="tab-pane active" id="dashboard-tab">
+                    
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon chats">
+                                <i class="ri-chat-private-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>المحادثات النشطة</h3>
+                                <p class="stat-value" id="stat-active-chats">3</p>
+                                <span class="stat-trend up"><i class="ri-arrow-up-line"></i> +12% اليوم</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon responses">
+                                <i class="ri-robot-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>الردود التلقائية (AI)</h3>
+                                <p class="stat-value" id="stat-ai-replies">142</p>
+                                <span class="stat-trend up"><i class="ri-arrow-up-line"></i> +85% مؤتمت</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon speed">
+                                <i class="ri-speed-up-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>سرعة استجابة البوت</h3>
+                                <p class="stat-value" id="stat-response-speed">1.8 ثانية</p>
+                                <span class="stat-trend neutral"><i class="ri-checkbox-circle-line"></i> استقرار تام</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon leads">
+                                <i class="ri-user-star-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>زبائن مهتمين (Leads)</h3>
+                                <p class="stat-value" id="stat-leads-count">24</p>
+                                <span class="stat-trend up"><i class="ri-arrow-up-line"></i> +4 زبائن جدد</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts & History Grid -->
+                    <div class="dashboard-grid">
+                        <div class="chart-container card">
+                            <div class="card-header">
+                                <h3>حجم الرسائل اليومي</h3>
+                                <div class="card-options">
+                                    <span class="badge badge-light">آخر 7 أيام</span>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="messagesChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container card">
+                            <div class="card-header">
+                                <h3>تصنيف استفسارات الزبائن</h3>
+                                <div class="card-options">
+                                    <span class="badge badge-light">مؤتمت</span>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="categoriesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Guide Card -->
+                    <div class="guide-card card">
+                        <div class="guide-content">
+                            <i class="ri-lightbulb-flash-line guide-spark"></i>
+                            <div class="guide-text">
+                                <h4>خطوات تشغيل النظام الذكي:</h4>
+                                <ol>
+                                    <li>قم بربط حساب واتساب الخاص بك من تبويب <strong>"ربط الواتساب"</strong> عن طريق مسح الرمز.</li>
+                                    <li>اضبط تعليمات الرد وقاعدة بيانات الأسئلة في تبويب <strong>"إعدادات الذكاء الاصطناعي"</strong>.</li>
+                                    <li>استخدم <strong>"محاكي هاتف الزبون"</strong> على اليسار لتجربة المحادثة بشكل مباشر ورؤية النتائج فوراً!</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 2. WHATSAPP CONNECT TAB -->
+                <section class="tab-pane" id="whatsapp-connect-tab">
+                    <div class="connect-layout card">
+                        
+                        <!-- Connecting/Disconnected View -->
+                        <div id="wa-disconnected-view" class="wa-view active">
+                            <div class="wa-connect-steps">
+                                <h2>ربط حسابك على واتساب بالذكاء الاصطناعي</h2>
+                                <p class="subtitle">قم بالربط خلال ثوانٍ معدودة لبدء تشغيل الرد التلقائي الذكي.</p>
+                                
+                                <div class="steps-list">
+                                    <div class="step-item">
+                                        <div class="step-number">1</div>
+                                        <div class="step-info">
+                                            <h4>افتح تطبيق واتساب على هاتفك</h4>
+                                            <p>انتقل إلى القائمة أو الإعدادات وحدد <strong>الأجهزة المرتبطة</strong>.</p>
+                                        </div>
+                                    </div>
+                                    <div class="step-item">
+                                        <div class="step-number">2</div>
+                                        <div class="step-info">
+                                            <h4>اضغط على "ربط جهاز"</h4>
+                                            <p>قم بتوجيه كاميرا هاتفك نحو الشاشة لمسح الرمز المربع.</p>
+                                        </div>
+                                    </div>
+                                    <div class="step-item">
+                                        <div class="step-number">3</div>
+                                        <div class="step-info">
+                                            <h4>انتظر اكتمال المزامنة</h4>
+                                            <p>سيقوم نظام WhatsBot بمزامنة جهات الاتصال وبدء العمل مباشرة.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="primary-btn" id="generate-qr-btn">
+                                    <i class="ri-qr-code-line"></i>
+                                    <span>توليد رمز الاستجابة السريعة QR Code</span>
+                                </button>
+                            </div>
+                            
+                            <!-- QR Container -->
+                            <div class="qr-container-box">
+                                <div class="qr-placeholder" id="qr-placeholder-wrapper">
+                                    <i class="ri-qr-code-fill"></i>
+                                    <p>اضغط على توليد الرمز لعرض رمز الاستجابة</p>
+                                </div>
+                                <div class="qr-scanner-box hidden" id="qr-scanner-wrapper">
+                                    <div class="scanner-laser"></div>
+                                    <!-- Real QR Image -->
+                                    <img class="qr-img" id="qr-image" src="" alt="WhatsApp QR Code" style="display: none; width: 200px; height: 200px; padding: 8px; background: white; border-radius: 12px; box-shadow: 0 0 20px rgba(255, 255, 255, 0.1); z-index: 5;">
+                                    <!-- Embedded Mock QR Image SVG -->
+                                    <svg class="qr-svg" viewBox="0 0 100 100" id="qr-svg-code">
+                                        <rect width="100" height="100" fill="white"/>
+                                        <!-- Corners -->
+                                        <rect x="5" y="5" width="25" height="25" fill="#1f2937" rx="2"/>
+                                        <rect x="10" y="10" width="15" height="15" fill="white" rx="1"/>
+                                        <rect x="13" y="13" width="9" height="9" fill="#1f2937"/>
+                                        
+                                        <rect x="70" y="5" width="25" height="25" fill="#1f2937" rx="2"/>
+                                        <rect x="75" y="10" width="15" height="15" fill="white" rx="1"/>
+                                        <rect x="78" y="13" width="9" height="9" fill="#1f2937"/>
+                                        
+                                        <rect x="5" y="70" width="25" height="25" fill="#1f2937" rx="2"/>
+                                        <rect x="10" y="75" width="15" height="15" fill="white" rx="1"/>
+                                        <rect x="13" y="78" width="9" height="9" fill="#1f2937"/>
+                                        
+                                        <!-- Random Code Bits -->
+                                        <rect x="40" y="10" width="5" height="10" fill="#1f2937"/>
+                                        <rect x="50" y="5" width="10" height="5" fill="#1f2937"/>
+                                        <rect x="45" y="20" width="15" height="5" fill="#1f2937"/>
+                                        
+                                        <rect x="10" y="40" width="15" height="5" fill="#1f2937"/>
+                                        <rect x="5" y="50" width="10" height="10" fill="#1f2937"/>
+                                        <rect x="20" y="55" width="10" height="5" fill="#1f2937"/>
+                                        
+                                        <rect x="40" y="40" width="20" height="20" fill="#1f2937"/>
+                                        <rect x="45" y="45" width="10" height="10" fill="white"/>
+                                        
+                                        <rect x="70" y="40" width="10" height="5" fill="#1f2937"/>
+                                        <rect x="85" y="45" width="5" height="15" fill="#1f2937"/>
+                                        <rect x="75" y="55" width="15" height="10" fill="#1f2937"/>
+                                        
+                                        <rect x="40" y="70" width="10" height="15" fill="#1f2937"/>
+                                        <rect x="55" y="80" width="10" height="5" fill="#1f2937"/>
+                                        <rect x="50" y="85" width="20" height="10" fill="#1f2937"/>
+                                        
+                                        <rect x="75" y="75" width="15" height="5" fill="#1f2937"/>
+                                        <rect x="80" y="85" width="15" height="10" fill="#1f2937"/>
+                                    </svg>
+                                    <div class="qr-overlay hidden" id="qr-loading-overlay">
+                                        <div class="spinner"></div>
+                                        <p id="qr-loading-text">جاري إنشاء رمز الاستجابة...</p>
+                                    </div>
+                                    <p class="scan-hint">يرجى مسح الرمز من خلال تطبيق واتساب لهاتفك</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Connected View -->
+                        <div id="wa-connected-view" class="wa-view hidden">
+                            <div class="success-banner">
+                                <div class="success-icon">
+                                    <i class="ri-checkbox-circle-fill"></i>
+                                </div>
+                                <h2>تم ربط حسابك بنجاح!</h2>
+                                <p>الذكاء الاصطناعي يقوم الآن بمسح والرد تلقائياً على الرسائل الواردة.</p>
+                            </div>
+                            
+                            <div class="device-details-grid">
+                                <div class="device-card">
+                                    <div class="device-header">
+                                        <div class="device-info-meta">
+                                            <i class="ri-phone-find-line"></i>
+                                            <div>
+                                                <h4>iPhone 15 Pro Max</h4>
+                                                <p id="wa-connected-phone">+964 770 123 4567</p>
+                                            </div>
+                                        </div>
+                                        <span class="badge badge-success">نشط ومتصل</span>
+                                    </div>
+                                    <div class="device-stats">
+                                        <div class="d-stat">
+                                            <span class="label">مستوى البطارية</span>
+                                            <span class="value"><i class="ri-battery-charge-line"></i> 88%</span>
+                                        </div>
+                                        <div class="d-stat">
+                                            <span class="label">حالة الشبكة</span>
+                                            <span class="value"><i class="ri-signal-tower-line"></i> ممتازة</span>
+                                        </div>
+                                        <div class="d-stat">
+                                            <span class="label">وقت الاقتران</span>
+                                            <span class="value" id="wa-connected-time">اليوم، 18:58</span>
+                                        </div>
+                                    </div>
+                                    <div class="device-actions">
+                                        <button class="danger-outline-btn" id="disconnect-wa-btn">
+                                            <i class="ri-logout-box-line"></i>
+                                            <span>إلغاء ربط هذا الجهاز</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="connection-logs card">
+                                    <div class="card-header">
+                                        <h3>سجل النشاط المباشر</h3>
+                                        <span class="badge badge-pulse">مباشر</span>
+                                    </div>
+                                    <div class="logs-wrapper" id="connection-logs-list">
+                                        <div class="log-item">
+                                            <span class="log-time">18:58</span>
+                                            <span class="log-text">تم إنشاء جلسة ربط ناجحة.</span>
+                                        </div>
+                                        <div class="log-item">
+                                            <span class="log-time">18:58</span>
+                                            <span class="log-text">مزامنة جهات الاتصال والمجموعات (142 جهة اتصال)...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </section>
+                
+                <!-- 3. AI SETTINGS TAB -->
+                <section class="tab-pane" id="ai-settings-tab">
+                    <div class="ai-settings-layout">
+                        
+                        <!-- Configuration Left Panel -->
+                        <div class="settings-panel card">
+                            <div class="card-header">
+                                <h3>تخصيص شخصية المساعد الذكي</h3>
+                            </div>
+                            
+                            <form class="settings-form" id="ai-config-form" onsubmit="event.preventDefault();">
+                                <div class="form-group">
+                                    <label for="ai-name">اسم البوت (اسم المساعد)</label>
+                                    <input type="text" id="ai-name" value="مساعد لورا الذكي" placeholder="مثال: مساعدة المبيعات، بوت الدعم الفني">
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ai-model">موديل الذكاء الاصطناعي</label>
+                                        <select id="ai-model">
+                                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (موصى به)</option>
+                                            <option value="gpt-4o">GPT-4o (سريع جداً)</option>
+                                            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ai-language">اللغة واللهجة الافتراضية</label>
+                                        <select id="ai-language">
+                                            <option value="iraqi">العربية (اللهجة العراقية)</option>
+                                            <option value="arabic-fusha">العربية الفصحى</option>
+                                            <option value="english">English (الإنجليزية)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="gemini-api-key">مفتاح API الخاص بـ Gemini (Gemini API Key)</label>
+                                    <div class="api-key-input-container">
+                                        <input type="password" id="gemini-api-key" placeholder="AIzaSy...">
+                                        <button type="button" class="toggle-password-btn" id="toggle-api-key-btn" title="إظهار مفتاح الـ API">
+                                            <i class="ri-eye-off-line"></i>
+                                        </button>
+                                    </div>
+                                    <span class="range-hint">يتم حفظ المفتاح محلياً في متصفحك بشكل آمن (Local Storage) للاتصال المباشر.</span>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div class="slider-label">
+                                        <label for="ai-temp">مستوى الإبداع والحرية (Creativity)</label>
+                                        <span id="ai-temp-val">0.3</span>
+                                    </div>
+                                    <input type="range" id="ai-temp" min="0" max="1" step="0.1" value="0.3">
+                                    <span class="range-hint">مستويات منخفضة (0.1 - 0.3) تعطي إجابات دقيقة ومحددة. مستويات مرتفعة تعطي إجابات إبداعية ومرحة.</span>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>نماذج جاهزة سريعة (Templates)</label>
+                                    <div class="presets-container">
+                                        <button type="button" class="preset-btn active" data-preset="salon">صالونات تجميل</button>
+                                        <button type="button" class="preset-btn" data-preset="ecommerce">متجر مبيعات وتوصيل</button>
+                                        <button type="button" class="preset-btn" data-preset="booking">حجز طبي وعيادات</button>
+                                        <button type="button" class="preset-btn" data-preset="support">دعم فني واستفسارات</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="ai-system-prompt">تعليمات المساعد (System Prompt)</label>
+                                    <textarea id="ai-system-prompt" rows="6" placeholder="اكتب تعليمات مفصلة للمساعد الذكي، كيف يجب أن يتحدث، ما هي النبرة، وما هي وظيفته الأساسية...">أنت مساعدة ذكية وودودة لـ "صالون لورا للتجميل" في بغداد. تتحدثين باللهجة العراقية اللطيفة والمحترمة.
+وظيفتك الإجابة على استفسارات الزبونات حول الخدمات المتاحة (شعر، مكياج، أظافر، تنظيف بشرة)، توضيح الأسعار، ومساعدتهن في حجز المواعيد.
+كوني لبقة ومهذبة، واحرصي دائماً على طلب تفاصيل الخدمة واليوم والوقت المناسب لتأكيد الحجز.</textarea>
+                                </div>
+                                
+                                <div class="settings-actions">
+                                    <button type="button" class="primary-btn" id="save-ai-settings-btn">
+                                        <i class="ri-save-line"></i>
+                                        <span>حفظ الإعدادات</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Knowledge Base Right Panel -->
+                        <div class="knowledge-panel card">
+                            <div class="card-header">
+                                <h3>قاعدة الأسئلة الشائعة (Knowledge Base)</h3>
+                                <button class="primary-outline-btn btn-sm" id="add-faq-btn">
+                                    <i class="ri-add-line"></i>
+                                    <span>إضافة سؤال</span>
+                                </button>
+                            </div>
+                            <p class="section-description">يستخدم الذكاء الاصطناعي هذه البيانات بشكل أساسي للإجابة على الأسئلة الشائعة بدقة متناهية دون تأليف معلومات خارجة.</p>
+                            
+                            <div class="faq-list-container" id="faq-items-list">
+                                <!-- FAQ Item Row -->
+                                <div class="faq-item-row" data-id="faq-1">
+                                    <div class="faq-row-header">
+                                        <div class="faq-badge">سؤال وجواب #1</div>
+                                        <button class="delete-faq-btn" title="حذف">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="faq-question-input" value="الأسعار وقائمة الخدمات" placeholder="الكلمات المفتاحية أو السؤال (مثال: الأسعار، العناوين)">
+                                    </div>
+                                    <div class="form-group">
+                                        <textarea class="faq-answer-textarea" rows="3" placeholder="الإجابة التفصيلية التي سيستخدمها البوت للرد...">قائمة الخدمات والأسعار الأساسية لدينا:
+1. سشوار وويفي: 15,000 د.ع - 25,000 د.ع.
+2. قص وصبغ شعر: يبدأ من 45,000 د.ع حسب الطول.
+3. معالجات شعر (كرياتين/بروتين): تبدأ من 80,000 د.ع.
+4. تنظيف بشرة عميق: 35,000 د.ع.
+5. تركيب وتزيين أظافر: 25,000 د.ع.</textarea>
+                                    </div>
+                                </div>
+                                
+                                <!-- FAQ Item Row -->
+                                <div class="faq-item-row" data-id="faq-2">
+                                    <div class="faq-row-header">
+                                        <div class="faq-badge">سؤال وجواب #2</div>
+                                        <button class="delete-faq-btn" title="حذف">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="faq-question-input" value="الموقع الجغرافي وساعات العمل" placeholder="الكلمات المفتاحية أو السؤال">
+                                    </div>
+                                    <div class="form-group">
+                                        <textarea class="faq-answer-textarea" rows="3" placeholder="الإجابة التفصيلية...">موقع الصالون: بغداد، حي المنصور، شارع الأميرات، قرب مول بابيلون.
+ساعات العمل: نفتح يومياً من الساعة 11:00 صباحاً وحتى 8:00 مساءً.
+يفضل دائماً الحجز المسبق لتجنب الانتظار.</textarea>
+                                    </div>
+                                </div>
+                                
+                                <!-- FAQ Item Row -->
+                                <div class="faq-item-row" data-id="faq-3">
+                                    <div class="faq-row-header">
+                                        <div class="faq-badge">سؤال وجواب #3</div>
+                                        <button class="delete-faq-btn" title="حذف">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="faq-question-input" value="طريقة الحجز ومواعيد العرائس" placeholder="الكلمات المفتاحية أو السؤال">
+                                    </div>
+                                    <div class="form-group">
+                                        <textarea class="faq-answer-textarea" rows="3" placeholder="الإجابة التفصيلية...">للحجز، يرجى تزويدنا بالاسم، الخدمة المطلوبة، واليوم والوقت المفضلين.
+بالنسبة لحجوزات العرائس (مكياج وتسريحة متكاملة): يفضل الحجز قبل أسبوع على الأقل ويتطلب دفع عربون لتثبيت الموعد.</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 4. LIVE CHAT TAB -->
+                <section class="tab-pane" id="live-chat-tab">
+                    <div class="live-chat-layout">
+                        
+                        <!-- Left Pane: Conversations List -->
+                        <div class="chats-sidebar card">
+                            <div class="sidebar-search">
+                                <i class="ri-search-line"></i>
+                                <input type="text" placeholder="البحث في المحادثات...">
+                            </div>
+                            <div class="chats-list" id="chats-list-wrapper">
+                                <!-- Dynamic chats rendered by JS -->
+                            </div>
+                        </div>
+                        
+                        <!-- Middle Pane: Chat Window -->
+                        <div class="chat-window card">
+                            <!-- Chat Header -->
+                            <div class="chat-window-header">
+                                <div class="active-chat-user" id="active-chat-user-info">
+                                    <div class="avatar" id="active-chat-avatar">أ</div>
+                                    <div>
+                                        <h4 id="active-chat-name">أحمد علي</h4>
+                                        <span class="active-chat-status" id="active-chat-phone">+964 781 987 6543</span>
+                                    </div>
+                                </div>
+                                <div class="chat-controls">
+                                    <div class="api-status-badge badge-simulation" id="gemini-status-badge">
+                                        <i class="ri-instance-line"></i>
+                                        <span>وضع المحاكاة</span>
+                                    </div>
+                                    <div class="ai-toggle-box">
+                                        <span>الرد التلقائي (AI Bot)</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="ai-auto-reply-toggle" checked>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Messages List -->
+                            <div class="chat-messages" id="chat-messages-container">
+                                <!-- Messages will render here dynamically -->
+                            </div>
+                            
+                            <!-- Typing Indicator -->
+                            <div class="typing-indicator-box hidden" id="chat-typing-indicator">
+                                <span class="bot-name" id="typing-bot-name">المساعد</span>
+                                <div class="typing-bubbles">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Chat Input -->
+                            <div class="chat-input-bar">
+                                <input type="text" id="chat-manual-input" placeholder="اكتب ردك اليدوي هنا... (سيتعطل الرد الذكي مؤقتاً عند الإرسال)">
+                                <button class="send-btn" id="send-manual-message-btn">
+                                    <i class="ri-send-plane-2-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Pane: Customer Metadata & AI Summary -->
+                        <div class="customer-info-pane card">
+                            <div class="pane-section">
+                                <h3>معلومات العميل</h3>
+                                <div class="customer-metadata">
+                                    <div class="meta-row">
+                                        <span class="label">الحالة:</span>
+                                        <select class="status-select-tag" id="customer-tag-select">
+                                            <option value="lead">زبون محتمل (Lead)</option>
+                                            <option value="customer">زبون مؤكد (Customer)</option>
+                                            <option value="spam">غير مهتم (Spam)</option>
+                                        </select>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span class="label">المنطقة:</span>
+                                        <span class="value" id="customer-meta-location">بغداد، الكرخ</span>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span class="label">تاريخ الاتصال:</span>
+                                        <span class="value" id="customer-meta-date">اليوم، 17:42</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr class="pane-divider">
+                            
+                            <div class="pane-section">
+                                <h3>تخليص المحادثة بالذكاء الاصطناعي</h3>
+                                <div class="ai-summary-box">
+                                    <p id="ai-summary-text">جاري تحليل المحادثة لإنشاء ملخص تلقائي...</p>
+                                </div>
+                            </div>
+                            
+                            <hr class="pane-divider">
+                            
+                            <div class="pane-section">
+                                <h3>ملاحظات يدوية</h3>
+                                <textarea id="customer-manual-notes" rows="4" placeholder="أضف ملاحظاتك هنا لحفظها في سجل العميل..."></textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+        
+        <!-- Right Section: Customer Phone Simulator -->
+        <section class="simulator-section">
+            <div class="simulator-toggle-btn" id="simulator-toggle" title="فتح محاكي هاتف الزبون">
+                <i class="ri-phone-line"></i>
+                <span>محاكي الزبون</span>
+            </div>
+            
+            <div class="iphone-mockup">
+                <!-- iPhone Frame Bezels -->
+                <div class="iphone-bezel">
+                    <!-- Notch / Dynamic Island -->
+                    <div class="dynamic-island"></div>
+                    
+                    <!-- iPhone Screen Content -->
+                    <div class="iphone-screen">
+                        
+                        <!-- iOS Status Bar -->
+                        <div class="ios-status-bar">
+                            <span class="ios-time" id="ios-time-display">18:58</span>
+                            <div class="ios-icons">
+                                <i class="ri-signal-wifi-fill"></i>
+                                <i class="ri-signal-tower-fill"></i>
+                                <i class="ri-battery-fill"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Mock WhatsApp App -->
+                        <div class="whatsapp-app">
+                            <!-- WhatsApp Header -->
+                            <div class="wa-header">
+                                <div class="wa-header-left">
+                                    <i class="ri-arrow-right-line wa-back-icon"></i>
+                                    <div class="wa-avatar">
+                                        <i class="ri-whatsapp-fill"></i>
+                                    </div>
+                                    <div class="wa-chat-info">
+                                        <h4>صالون لورا للتجميل</h4>
+                                        <span id="wa-bot-status-text">متصل</span>
+                                    </div>
+                                </div>
+                                <div class="wa-header-right">
+                                    <i class="ri-vidicon-line"></i>
+                                    <i class="ri-phone-line"></i>
+                                    <i class="ri-more-2-fill"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- WhatsApp Conversation Stream -->
+                            <div class="wa-chat-body" id="wa-simulator-chat-body">
+                                <div class="wa-date-divider">اليوم</div>
+                                
+                                <div class="wa-bubble wa-received">
+                                    <div class="wa-msg-text">
+                                        مرحباً بكِ في صالون لورا للتجميل! ✨
+أنا مساعدتك الذكية، كيف يمكنني مساعدتكِ اليوم؟ 🌸
+يمكنك الاستفسار عن الأسعار أو الخدمات أو حجز موعد.
+                                    </div>
+                                    <div class="wa-msg-time">18:58</div>
+                                </div>
+                            </div>
+                            
+                            <!-- WhatsApp Input Bar -->
+                            <div class="wa-input-bar">
+                                <i class="ri-add-line wa-attachment-icon"></i>
+                                <div class="wa-input-wrapper">
+                                    <input type="text" id="wa-simulator-input" placeholder="اكتب رسالة...">
+                                    <i class="ri-emotion-line"></i>
+                                </div>
+                                <button class="wa-send-btn" id="wa-simulator-send-btn">
+                                    <i class="ri-send-plane-2-fill"></i>
+                                </button>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <!-- iPhone Home Bar Indicator -->
+                    <div class="home-bar"></div>
+                </div>
+            </div>
+            
+            <div class="simulator-instructions">
+                <p><i class="ri-information-line"></i> <strong>محاكي الزبون المباشر:</strong> اكتب رسالة كزبون (مثلاً: "وين صاير صالونكم؟" أو "أريد أحجز موعد باجر شعر ومكياج")، لتجربة استجابة الذكاء الاصطناعي وكيف تظهر في المحادثة المباشرة!</p>
+            </div>
+        </section>
+        
+    </div>
+    
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
