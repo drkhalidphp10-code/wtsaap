@@ -136,7 +136,10 @@ async function connectToWhatsApp() {
             isWhatsAppReady = false;
             console.log('Real WhatsApp QR Code received, broadcasting...');
             qrcode.toDataURL(qr, (err, url) => {
-                if (!err) {
+                if (err) {
+                    console.error('Error generating QR DataURL:', err);
+                } else {
+                    console.log('QR Code DataURL generated successfully. Broadcasting to all sockets...');
                     io.emit('qr', url);
                 }
             });
@@ -359,8 +362,14 @@ io.on('connection', (socket) => {
     socket.emit('init-data', { aiConfig, conversations, isWhatsAppReady });
 
     if (lastQr && !isWhatsAppReady) {
+        console.log(`Socket client connected and lastQr exists. Generating QR code URL for client...`);
         qrcode.toDataURL(lastQr, (err, url) => {
-            if (!err) socket.emit('qr', url);
+            if (err) {
+                console.error('Error generating QR DataURL for new client connection:', err);
+            } else {
+                console.log('Sending cached QR code URL to client...');
+                socket.emit('qr', url);
+            }
         });
     }
 
